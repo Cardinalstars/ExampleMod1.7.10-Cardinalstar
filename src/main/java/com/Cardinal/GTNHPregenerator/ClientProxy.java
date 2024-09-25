@@ -1,4 +1,4 @@
-package com.myname.mymodid;
+package com.Cardinal.GTNHPregenerator;
 
 public class ClientProxy extends CommonProxy {
 

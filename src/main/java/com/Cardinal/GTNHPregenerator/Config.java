@@ -1,4 +1,4 @@
-package com.myname.mymodid;
+package com.Cardinal.GTNHPregenerator;
 
 import java.io.File;
 
@@ -6,7 +6,7 @@ import net.minecraftforge.common.config.Configuration;
 
 public class Config {
 
-    public static String greeting = "Hello World";
+    public static String greeting = "Oi oi";
 
     public static void synchronizeConfiguration(File configFile) {
         Configuration configuration = new Configuration(configFile);
