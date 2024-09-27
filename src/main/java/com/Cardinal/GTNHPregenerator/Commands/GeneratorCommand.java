@@ -3,7 +3,10 @@ package com.Cardinal.GTNHPregenerator.Commands;
 import com.Cardinal.GTNHPregenerator.ChunkLoader.ChunkLoaderManager;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.command.server.CommandBlockLogic;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ChatComponentText;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +41,6 @@ public class GeneratorCommand extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] args)
     {
-
         if (args.length > 2)
         {
             double xLoc, zLoc;
@@ -61,10 +63,15 @@ public class GeneratorCommand extends CommandBase {
             }
 
             int radius = parseIntBounded(sender, args[2], 1, 10000);
-            ChunkLoaderManager CLM = new ChunkLoaderManager(radius, xLoc, zLoc);
-            CLM.beginLoading(MinecraftServer.getServer(), sender.getEntityWorld().provider.dimensionId);
-            System.out.println("xLoc is: " + xLoc);
-            System.out.println("zLoc is: " + zLoc);
+
+            if (!ChunkLoaderManager.instance.isGenerating())
+            {
+                ChunkLoaderManager.instance.initializePregenerator(radius, xLoc, zLoc, MinecraftServer.getServer(), sender.getEntityWorld().provider.dimensionId);
+            }
+            else
+            {
+                sender.addChatMessage(new ChatComponentText("Cannot start a pregenerator! There's already generation in progress!"));
+            }
         }
     }
 

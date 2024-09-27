@@ -1,32 +1,38 @@
 package com.Cardinal.GTNHPregenerator.ChunkLoader;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.chunk.storage.RegionFileCache;
-import net.minecraft.world.gen.ChunkProviderServer;
-import net.minecraftforge.common.DimensionManager;
 import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Vector;
 
 public class ChunkLoaderManager
 {
-    int radius;
-    double xCenter;
-    double zCenter;
-    private final static int numWorkerThreads = 5;
-    private static Thread[] workerThreads = new Thread[numWorkerThreads];
-    private Vector<Pair<Integer, Integer>> chunksToLoad = new Vector<>();
-    public ChunkLoaderManager(int radius, double xCenter, double zCenter)
+    public final static ChunkLoaderManager instance = new ChunkLoaderManager();
+    private boolean isGenerating = false;
+    private int dimensionID;
+    private MinecraftServer serverType;
+    private Vector<Pair<Integer, Integer>> chunksToLoad = new Vector<>(1000);
+    private int chunkToLoadIndex;
+
+    public void initializePregenerator(int radius, double zLoc, double xLoc, MinecraftServer server, int dimensionID)
     {
-        this.radius = radius;
-        this.xCenter = xCenter;
-        this.zCenter = zCenter;
-        findChunksToLoadCircle(radius, xCenter, zCenter);
+        findChunksToLoadCircle(radius, zLoc, xLoc);
+        chunkToLoadIndex = chunksToLoad.size() - 1;
+        this.dimensionID = dimensionID;
+        this.isGenerating = true;
+        this.serverType = server;
     }
 
+    public boolean isGenerating()
+    {
+        return this.isGenerating;
+    }
     // Passed in xCenter and passed in zCenter are both in block coordinates. Be sure to transform to chunk coordinates
     // I've done a ton of testing with this. It works without duplicates and holes in the raster.
-    private void findChunksToLoadCircle(int radius, double xCenter, double zCenter)
+    public void findChunksToLoadCircle(int radius, double xCenter, double zCenter)
     {
         // This is a solved problem. I'll use the wikipedia entry on this: https://en.wikipedia.org/wiki/Midpoint_circle_algorithm
         int chunkXCenter = (int) Math.floor(xCenter / 16);
@@ -96,40 +102,30 @@ public class ChunkLoaderManager
         }
     }
 
+    public void removeChunkFromList()
+    {
+        chunksToLoad.remove(chunksToLoad.size() - 1);
+    }
+
     private void addChunk(int chunkX, int chunkZ)
     {
         chunksToLoad.add(Pair.of(chunkX, chunkZ));
     }
 
-    public void beginLoading(MinecraftServer server, int dimensionId)
+    public void queueChunks(int numChunksToQueue)
     {
-        for(int i = 0; i < numWorkerThreads; i++)
+        for (int i = 0; i < numChunksToQueue; i++)
         {
-            final int threadIndex = i; // Local copy of the thread index
-
-            // Start each thread
-            workerThreads[i] = new Thread(() -> {
-                for (int j = threadIndex; j < chunksToLoad.size(); j += numWorkerThreads) {
-                    Pair<Integer, Integer> chunk = chunksToLoad.get(j);
-                    int x = chunk.getLeft();
-                    int z = chunk.getRight();
-
-                    ChunkProviderServer cps = server.worldServerForDimension(dimensionId).theChunkProviderServer;
-
-                    if (!chunksExist(x, z, dimensionId)) {
-                        cps.loadChunk(x, z);
-                        cps.unloadChunksIfNotNearSpawn(x, z);
-                    }
-                }
-            });
-            workerThreads[i].start();
-
+            if (!chunksToLoad.isEmpty())
+            {
+                ChunkLoader.processLoadChunk(this.serverType, this.dimensionID, chunksToLoad.get(chunkToLoadIndex));
+                chunkToLoadIndex--;
+            }
+            else
+            {
+                isGenerating = false;
+            }
         }
     }
 
-    private static boolean chunksExist(int x, int z, int dimensionID) {
-        WorldServer world = null;
-        world = DimensionManager.getWorld(dimensionID);
-        return RegionFileCache.createOrLoadRegionFile(world.getChunkSaveLocation(), x, z).chunkExists(x & 0x1F, z & 0x1F);
-    }
 }
