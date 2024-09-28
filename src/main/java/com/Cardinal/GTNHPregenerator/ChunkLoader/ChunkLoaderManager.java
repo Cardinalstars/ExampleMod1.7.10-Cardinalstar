@@ -97,13 +97,6 @@ public class ChunkLoaderManager
         System.out.printf("Found %s chunks to load", chunksToLoad.size());
     }
 
-    private void addChunksBetween(int xLine, int zMin, int zMax)
-    {
-        for (int z = zMin + 1; z <= zMax - 1; z++) {
-            addChunk(xLine, z);
-        }
-    }
-
     public void removeChunkFromList()
     {
         chunksToLoad.remove(chunksToLoad.size() - 1);
@@ -112,11 +105,6 @@ public class ChunkLoaderManager
     public int getChunkToLoadSize()
     {
         return chunksToLoad.size();
-    }
-
-    private void addChunk(int chunkX, int chunkZ)
-    {
-        chunksToLoad.add(Pair.of(chunkX, chunkZ));
     }
 
     public void queueChunks(int numChunksToQueue)
@@ -136,4 +124,24 @@ public class ChunkLoaderManager
         }
     }
 
+    public boolean hasValidPregeneratorFiles()
+    {
+        return false;
+    }
+
+    public boolean intializeFromPregeneratorFiles()
+    {
+        return false;
+    }
+    private void addChunk(int chunkX, int chunkZ)
+    {
+        chunksToLoad.add(Pair.of(chunkX, chunkZ));
+    }
+
+    private void addChunksBetween(int xLine, int zMin, int zMax)
+    {
+        for (int z = zMin + 1; z <= zMax - 1; z++) {
+            addChunk(xLine, z);
+        }
+    }
 }

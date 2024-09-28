@@ -67,4 +67,23 @@ public class SafeFileWriter
         randomAccessFile.close();
         Files.deleteIfExists(tempFile); // Cleanup the temp file
     }
+
+    public void openForWriting() throws IOException
+    {
+        if (randomAccessFile == null || !tempFile.toFile().exists()) {
+            randomAccessFile = new RandomAccessFile(tempFile.toFile(), "rw");
+        }
+    }
+
+    public void openForReading() throws IOException
+    {
+        if (randomAccessFile == null || !originalFile.toFile().exists()) {
+            randomAccessFile = new RandomAccessFile(originalFile.toFile(), "rw");
+        }
+    }
+
+    public boolean fileExists()
+    {
+        return originalFile.toFile().exists();
+    }
 }

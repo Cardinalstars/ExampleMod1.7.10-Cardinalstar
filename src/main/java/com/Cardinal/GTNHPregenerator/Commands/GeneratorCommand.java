@@ -4,8 +4,6 @@ import com.Cardinal.GTNHPregenerator.ChunkLoader.ChunkLoaderManager;
 import com.Cardinal.GTNHPregenerator.Utils.PregeneratorCommandInfo;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.server.CommandBlockLogic;
-import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
 
@@ -94,10 +92,5 @@ public class GeneratorCommand extends CommandBase {
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args) {
         return null;
-    }
-
-    @Override
-    public boolean isUsernameIndex(String[] args, int index) {
-        return false;
     }
 }

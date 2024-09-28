@@ -18,6 +18,7 @@ public class PregeneratorFileManager
 {
     boolean fileAIsMostRecent = true;
 
+    private final SafeFileWriter commandWriter;
     private final SafeFileWriter iterationWriter;
     public PregeneratorFileManager(MinecraftServer server, double xLoc, double zLoc, int radius) throws IOException
     {
@@ -28,11 +29,12 @@ public class PregeneratorFileManager
         Path fileIterationPath = temporaryFileSaveFolder.resolve("fileIteration.txt");
         Path fileCommandPath = temporaryFileSaveFolder.resolve("fileCommand.txt");
 
-        SafeFileWriter commandWriter = new SafeFileWriter(fileCommandPath);
+        commandWriter = new SafeFileWriter(fileCommandPath);
         commandWriter.clearFile();
         commandWriter.writeDouble(xLoc);
         commandWriter.writeDouble(zLoc);
         commandWriter.writeInt(radius);
+        commandWriter.close();
 
         this.iterationWriter = new SafeFileWriter(fileIterationPath);
     }
@@ -40,16 +42,21 @@ public class PregeneratorFileManager
 
     public boolean canResumeCommand()
     {
-        if ()
-        {
-
-        }
-        return Optional.empty();
+        return commandWriter.fileExists() && iterationWriter.fileExists();
     }
 
-    public PregeneratorCommandInfo getCommandInfo()
+    public Optional<PregeneratorCommandInfo> getCommandInfo()
     {
-
+        try
+        {
+            commandWriter.openForReading();
+            return Optional.of(new PregeneratorCommandInfo(commandWriter.readDouble(), commandWriter.readDouble(), commandWriter.readInt()));
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return Optional.empty();
     }
 
     public void saveIteration(int iteration)
@@ -70,6 +77,7 @@ public class PregeneratorFileManager
         try
         {
             iterationWriter.close();
+
         }
         catch (IOException e)
         {
