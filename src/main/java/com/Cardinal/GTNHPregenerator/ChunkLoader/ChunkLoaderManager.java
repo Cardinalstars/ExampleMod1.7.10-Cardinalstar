@@ -1,11 +1,11 @@
 package com.Cardinal.GTNHPregenerator.ChunkLoader;
 
+import com.Cardinal.GTNHPregenerator.FileManager.PregeneratorFileManager;
+import com.Cardinal.GTNHPregenerator.Utils.PregeneratorCommandInfo;
 import net.minecraft.server.MinecraftServer;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.IOException;
 import java.util.Vector;
 
 public class ChunkLoaderManager
@@ -16,14 +16,16 @@ public class ChunkLoaderManager
     private MinecraftServer serverType;
     private Vector<Pair<Integer, Integer>> chunksToLoad = new Vector<>(1000);
     private int chunkToLoadIndex;
+    private ChunkLoader loader;
 
-    public void initializePregenerator(int radius, double zLoc, double xLoc, MinecraftServer server, int dimensionID)
-    {
-        findChunksToLoadCircle(radius, zLoc, xLoc);
+    public void initializePregenerator(PregeneratorCommandInfo commandInfo, MinecraftServer server, int dimensionID) throws IOException {
+        findChunksToLoadCircle(commandInfo.getRadius(), commandInfo.getXLoc(), commandInfo.getZLoc());
         chunkToLoadIndex = chunksToLoad.size() - 1;
         this.dimensionID = dimensionID;
         this.isGenerating = true;
         this.serverType = server;
+
+        loader = new ChunkLoader(new PregeneratorFileManager(this.serverType, commandInfo.getXLoc(), commandInfo.getZLoc(), commandInfo.getRadius()));
     }
 
     public boolean isGenerating()
@@ -107,6 +109,11 @@ public class ChunkLoaderManager
         chunksToLoad.remove(chunksToLoad.size() - 1);
     }
 
+    public int getChunkToLoadSize()
+    {
+        return chunksToLoad.size();
+    }
+
     private void addChunk(int chunkX, int chunkZ)
     {
         chunksToLoad.add(Pair.of(chunkX, chunkZ));
@@ -118,11 +125,12 @@ public class ChunkLoaderManager
         {
             if (!chunksToLoad.isEmpty())
             {
-                ChunkLoader.processLoadChunk(this.serverType, this.dimensionID, chunksToLoad.get(chunkToLoadIndex));
+                loader.processLoadChunk(this.serverType, this.dimensionID, chunksToLoad.get(chunkToLoadIndex));
                 chunkToLoadIndex--;
             }
             else
             {
+                loader.fileManager.closeAndRemoveAllFiles();
                 isGenerating = false;
             }
         }

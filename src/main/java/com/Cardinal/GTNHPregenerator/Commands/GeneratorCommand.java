@@ -1,6 +1,7 @@
 package com.Cardinal.GTNHPregenerator.Commands;
 
 import com.Cardinal.GTNHPregenerator.ChunkLoader.ChunkLoaderManager;
+import com.Cardinal.GTNHPregenerator.Utils.PregeneratorCommandInfo;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.server.CommandBlockLogic;
@@ -8,6 +9,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentText;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,9 +66,18 @@ public class GeneratorCommand extends CommandBase {
 
             int radius = parseIntBounded(sender, args[2], 1, 10000);
 
+            PregeneratorCommandInfo commandInfo = new PregeneratorCommandInfo(xLoc, zLoc, radius);
             if (!ChunkLoaderManager.instance.isGenerating())
             {
-                ChunkLoaderManager.instance.initializePregenerator(radius, xLoc, zLoc, MinecraftServer.getServer(), sender.getEntityWorld().provider.dimensionId);
+                try
+                {
+                    ChunkLoaderManager.instance.initializePregenerator(commandInfo, MinecraftServer.getServer(), sender.getEntityWorld().provider.dimensionId);
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                    sender.addChatMessage(new ChatComponentText("Cannot start a pregenerator! File exception when starting pregenerator"));
+                }
             }
             else
             {
