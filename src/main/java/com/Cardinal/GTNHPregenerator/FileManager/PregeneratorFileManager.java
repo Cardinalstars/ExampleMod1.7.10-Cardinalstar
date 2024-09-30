@@ -105,6 +105,6 @@ public class PregeneratorFileManager
 
 
     private Path getWorldFolderPath(MinecraftServer server) {
-        return Paths.get((server.getActiveAnvilConverter().getSaveLoader(server.getFolderName(), false)).getWorldDirectoryName());
+        return Paths.get(server.getFolderName());
     }
 }
