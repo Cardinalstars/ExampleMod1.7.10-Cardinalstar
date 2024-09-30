@@ -24,7 +24,7 @@ public class PregeneratorFileManager
         if (!Files.exists(temporaryFileSaveFolder)) {
             Files.createDirectories(temporaryFileSaveFolder);
         }
-        this.iterationReadWriter = new SafeFileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_ITERATION), 20);
+        this.iterationReadWriter = new SafeFileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_ITERATION), 100);
         this.commandReadWriter = new FileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_FILE));
 
         commandReadWriter.clearFile();
@@ -41,7 +41,7 @@ public class PregeneratorFileManager
         if (!Files.exists(temporaryFileSaveFolder)) {
             Files.createDirectories(temporaryFileSaveFolder);
         }
-        this.iterationReadWriter = new SafeFileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_ITERATION), 20);
+        this.iterationReadWriter = new SafeFileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_ITERATION), 100);
         this.commandReadWriter = new FileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_FILE));
     }
 
@@ -65,7 +65,7 @@ public class PregeneratorFileManager
         }
         catch (IOException e)
         {
-            System.out.println("File is likely open elsewhere. Close file explorer if you're seeing this.");
+            e.printStackTrace();
         }
     }
 

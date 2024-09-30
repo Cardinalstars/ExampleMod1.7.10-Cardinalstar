@@ -26,9 +26,9 @@ public class SafeFileReadWriter extends FileReadWriter
     {
         if (writeIteration >= iterationsBetweenWrites)
         {
+            writeIteration = 0;
             this.writeInt(value);
             this.commit();
-            writeIteration = 0;
         }
         else
         {
@@ -39,6 +39,10 @@ public class SafeFileReadWriter extends FileReadWriter
     @Override
     public void writeInt(int value) throws IOException
     {
+        if (this.randomAccessFileTempIsClosed)
+        {
+            this.openForWriting();
+        }
         randomAccessFileTemp.seek(0);
         randomAccessFileTemp.writeInt(value);
         randomAccessFileTemp.getChannel().force(true);

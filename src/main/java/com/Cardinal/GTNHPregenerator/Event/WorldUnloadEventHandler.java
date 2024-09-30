@@ -10,7 +10,10 @@ public class WorldUnloadEventHandler
     public void onWorldUnload(WorldEvent.Unload event) {
         if (!event.world.isRemote)
         {
-            ChunkLoaderManager.instance.reset(false);
+            if (event.world.provider.dimensionId == ChunkLoaderManager.instance.getDimensionID() && !ChunkLoaderManager.instance.isGenerating())
+            {
+                ChunkLoaderManager.instance.reset(false);
+            }
         }
     }
 }

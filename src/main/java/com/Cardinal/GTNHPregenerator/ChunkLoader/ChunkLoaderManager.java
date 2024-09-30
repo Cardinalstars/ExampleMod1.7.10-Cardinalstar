@@ -143,6 +143,10 @@ public class ChunkLoaderManager
         return chunksToLoad.size();
     }
 
+    public int getDimensionID()
+    {
+        return dimensionID;
+    }
     public void queueChunks(int numChunksToQueue)
     {
         for (int i = 0; i < numChunksToQueue; i++)
