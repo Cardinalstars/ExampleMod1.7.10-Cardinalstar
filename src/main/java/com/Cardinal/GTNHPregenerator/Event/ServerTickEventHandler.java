@@ -12,7 +12,7 @@ public class ServerTickEventHandler
         if (event.phase == TickEvent.Phase.END) {
             if (ChunkLoaderManager.instance.isGenerating())
             {
-                ChunkLoaderManager.instance.queueChunks(2);
+                ChunkLoaderManager.instance.queueChunks(1);
             }
         }
     }

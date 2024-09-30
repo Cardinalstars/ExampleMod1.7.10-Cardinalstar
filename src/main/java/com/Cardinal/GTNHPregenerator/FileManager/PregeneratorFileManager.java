@@ -1,13 +1,10 @@
 package com.Cardinal.GTNHPregenerator.FileManager;
 
+import com.Cardinal.GTNHPregenerator.FileManager.ReadWriters.FileReadWriter;
+import com.Cardinal.GTNHPregenerator.FileManager.ReadWriters.SafeFileReadWriter;
 import com.Cardinal.GTNHPregenerator.Utils.PregeneratorCommandInfo;
-import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.storage.ISaveFormat;
-import net.minecraft.world.storage.SaveHandler;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,46 +13,47 @@ import java.util.Optional;
 
 public class PregeneratorFileManager
 {
-    boolean fileAIsMostRecent = true;
-
-    private final SafeFileWriter commandWriter;
-    private final SafeFileWriter iterationWriter;
-    public PregeneratorFileManager(MinecraftServer server, double xLoc, double zLoc, int radius) throws IOException
+    private final FileReadWriter commandReadWriter;
+    private final SafeFileReadWriter iterationReadWriter;
+    private final String COMMAND_FOLDER = "pregenerationFiles";
+    private final String COMMAND_FILE = "fileCommand";
+    private final String COMMAND_ITERATION = "fileIteration";
+    public PregeneratorFileManager(MinecraftServer server, double xLoc, double zLoc, int radius, int dimensionID) throws IOException
     {
-        Path temporaryFileSaveFolder = getWorldFolderPath(server).resolve("pregenerationFiles");
+        Path temporaryFileSaveFolder = Paths.get("saves").resolve(getWorldFolderPath(server).resolve(COMMAND_FOLDER));
         if (!Files.exists(temporaryFileSaveFolder)) {
             Files.createDirectories(temporaryFileSaveFolder);
         }
-        Path fileIterationPath = temporaryFileSaveFolder.resolve("fileIteration.txt");
-        Path fileCommandPath = temporaryFileSaveFolder.resolve("fileCommand.txt");
+        this.iterationReadWriter = new SafeFileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_ITERATION), 20);
+        this.commandReadWriter = new FileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_FILE));
 
-        commandWriter = new SafeFileWriter(fileCommandPath);
-        commandWriter.clearFile();
-        commandWriter.writeDouble(xLoc);
-        commandWriter.writeDouble(zLoc);
-        commandWriter.writeInt(radius);
-        commandWriter.close();
-
-        this.iterationWriter = new SafeFileWriter(fileIterationPath);
+        commandReadWriter.clearFile();
+        commandReadWriter.writeDouble(xLoc);
+        commandReadWriter.writeDouble(zLoc);
+        commandReadWriter.writeInt(radius);
+        commandReadWriter.writeInt(dimensionID);
+        commandReadWriter.close();
     }
 
-
-    public boolean canResumeCommand()
-    {
-        return commandWriter.fileExists() && iterationWriter.fileExists();
+    // Constructor to load the information from file
+    public PregeneratorFileManager(MinecraftServer server) throws IOException {
+        Path temporaryFileSaveFolder = Paths.get("saves").resolve(getWorldFolderPath(server).resolve(COMMAND_FOLDER));
+        if (!Files.exists(temporaryFileSaveFolder)) {
+            Files.createDirectories(temporaryFileSaveFolder);
+        }
+        this.iterationReadWriter = new SafeFileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_ITERATION), 20);
+        this.commandReadWriter = new FileReadWriter(temporaryFileSaveFolder.resolve(COMMAND_FILE));
     }
 
     public Optional<PregeneratorCommandInfo> getCommandInfo()
     {
         try
         {
-            commandWriter.openForReading();
-            return Optional.of(new PregeneratorCommandInfo(commandWriter.readDouble(), commandWriter.readDouble(), commandWriter.readInt()));
+            commandReadWriter.openForReading();
+            iterationReadWriter.openForReading();
+            return Optional.of(new PregeneratorCommandInfo(commandReadWriter.readDouble(), commandReadWriter.readDouble(), commandReadWriter.readInt(), commandReadWriter.readInt(), iterationReadWriter.readInt()));
         }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        catch (IOException ignored) {} // Ignoring this because often there's just nothing in the file if you're loading a world
         return Optional.empty();
     }
 
@@ -63,12 +61,11 @@ public class PregeneratorFileManager
     {
         try
         {
-            iterationWriter.writeInt(iteration, true);
-            iterationWriter.commit();
+            iterationReadWriter.writeAndCommitIntAfterIterations(iteration);
         }
         catch (IOException e)
         {
-            e.printStackTrace();
+            System.out.println("File is likely open elsewhere. Close file explorer if you're seeing this.");
         }
     }
 
@@ -76,14 +73,36 @@ public class PregeneratorFileManager
     {
         try
         {
-            iterationWriter.close();
-
+            iterationReadWriter.close();
+            iterationReadWriter.deleteFile();
+            commandReadWriter.close();
+            commandReadWriter.deleteFile();
         }
         catch (IOException e)
         {
             e.printStackTrace();
         }
     }
+
+    public void closeAllFiles()
+    {
+        try
+        {
+            iterationReadWriter.close();
+            commandReadWriter.close();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean isReady()
+    {
+        return true;
+    }
+
+
 
     private Path getWorldFolderPath(MinecraftServer server) {
         return Paths.get((server.getActiveAnvilConverter().getSaveLoader(server.getFolderName(), false)).getWorldDirectoryName());

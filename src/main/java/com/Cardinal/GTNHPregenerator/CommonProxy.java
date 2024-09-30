@@ -2,6 +2,8 @@ package com.Cardinal.GTNHPregenerator;
 
 import com.Cardinal.GTNHPregenerator.Commands.GeneratorCommand;
 import com.Cardinal.GTNHPregenerator.Event.ServerTickEventHandler;
+import com.Cardinal.GTNHPregenerator.Event.WorldLoadEventHandler;
+import com.Cardinal.GTNHPregenerator.Event.WorldUnloadEventHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
@@ -25,6 +27,8 @@ public class CommonProxy {
     {
         FMLCommonHandler.instance().bus().register(new ServerTickEventHandler());
         MinecraftForge.EVENT_BUS.register(new ServerTickEventHandler());
+        MinecraftForge.EVENT_BUS.register(new WorldLoadEventHandler());
+        MinecraftForge.EVENT_BUS.register(new WorldUnloadEventHandler());
     }
 
     // postInit "Handle interaction with other mods, complete your setup based on this." (Remove if not needed)

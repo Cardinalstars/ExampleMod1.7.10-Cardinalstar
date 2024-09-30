@@ -1,7 +1,7 @@
 package com.Cardinal.GTNHPregenerator.Event;
 
+import com.Cardinal.GTNHPregenerator.ChunkLoader.ChunkLoaderManager;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import net.minecraft.world.World;
 import net.minecraftforge.event.world.WorldEvent;
 
 public class WorldUnloadEventHandler
@@ -10,7 +10,7 @@ public class WorldUnloadEventHandler
     public void onWorldUnload(WorldEvent.Unload event) {
         if (!event.world.isRemote)
         {
-
+            ChunkLoaderManager.instance.reset(false);
         }
     }
 }

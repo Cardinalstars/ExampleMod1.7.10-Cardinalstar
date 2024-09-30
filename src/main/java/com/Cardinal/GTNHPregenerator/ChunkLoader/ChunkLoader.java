@@ -8,7 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class ChunkLoader
 {
-    PregeneratorFileManager fileManager;
+    private PregeneratorFileManager fileManager;
     public ChunkLoader(PregeneratorFileManager fileManager)
     {
         this.fileManager = fileManager;

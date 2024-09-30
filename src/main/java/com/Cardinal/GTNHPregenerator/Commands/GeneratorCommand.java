@@ -64,12 +64,13 @@ public class GeneratorCommand extends CommandBase {
 
             int radius = parseIntBounded(sender, args[2], 1, 10000);
 
-            PregeneratorCommandInfo commandInfo = new PregeneratorCommandInfo(xLoc, zLoc, radius);
+            int dimensionID = sender.getEntityWorld().provider.dimensionId;
+            PregeneratorCommandInfo commandInfo = new PregeneratorCommandInfo(xLoc, zLoc, radius, dimensionID);
             if (!ChunkLoaderManager.instance.isGenerating())
             {
                 try
                 {
-                    ChunkLoaderManager.instance.initializePregenerator(commandInfo, MinecraftServer.getServer(), sender.getEntityWorld().provider.dimensionId);
+                    ChunkLoaderManager.instance.initializePregenerator(commandInfo, MinecraftServer.getServer());
                 }
                 catch (IOException e)
                 {

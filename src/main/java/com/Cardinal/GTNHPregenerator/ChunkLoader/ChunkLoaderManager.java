@@ -6,6 +6,7 @@ import net.minecraft.server.MinecraftServer;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Vector;
 
 public class ChunkLoaderManager
@@ -17,15 +18,50 @@ public class ChunkLoaderManager
     private Vector<Pair<Integer, Integer>> chunksToLoad = new Vector<>(1000);
     private int chunkToLoadIndex;
     private ChunkLoader loader;
+    private PregeneratorFileManager fileManager;
 
-    public void initializePregenerator(PregeneratorCommandInfo commandInfo, MinecraftServer server, int dimensionID) throws IOException {
+    public void initializePregenerator(PregeneratorCommandInfo commandInfo, MinecraftServer server) throws IOException {
         findChunksToLoadCircle(commandInfo.getRadius(), commandInfo.getXLoc(), commandInfo.getZLoc());
-        chunkToLoadIndex = chunksToLoad.size() - 1;
-        this.dimensionID = dimensionID;
+        this.chunkToLoadIndex = chunksToLoad.size() - 1;
+        this.dimensionID = commandInfo.getDimensionID();
         this.isGenerating = true;
         this.serverType = server;
+        this.fileManager = new PregeneratorFileManager(this.serverType, commandInfo.getXLoc(), commandInfo.getZLoc(), commandInfo.getRadius(), commandInfo.getDimensionID());
+        this.loader = new ChunkLoader(this.fileManager);
+    }
 
-        loader = new ChunkLoader(new PregeneratorFileManager(this.serverType, commandInfo.getXLoc(), commandInfo.getZLoc(), commandInfo.getRadius()));
+    // The file manager is already intialized at this point. Maybe want to make this part of the intializeFromPregeneratorFiles method.
+    // Not sure yet.
+    public boolean intializeFromPregeneratorFiles(MinecraftServer server, int dimensionToCheck)
+    {
+        try
+        {
+            this.fileManager = new PregeneratorFileManager(server);
+            Optional<PregeneratorCommandInfo> commandInfoOptional = this.fileManager.getCommandInfo();
+            if (commandInfoOptional.isPresent())
+            {
+                PregeneratorCommandInfo commandInfo = commandInfoOptional.get();
+                if (commandInfo.getDimensionID() != dimensionToCheck)
+                {
+                    return false;
+                }
+                findChunksToLoadCircle(commandInfo.getRadius(), commandInfo.getXLoc(), commandInfo.getZLoc());
+                this.chunkToLoadIndex = commandInfo.getIteration() - 1;
+                this.dimensionID = commandInfo.getDimensionID();
+                if (this.chunkToLoadIndex < chunksToLoad.size()) {
+                    this.chunksToLoad.subList(this.chunkToLoadIndex + 1, chunksToLoad.size()).clear();
+                    this.serverType = server;
+                    this.isGenerating = true;
+                    this.loader = new ChunkLoader(this.fileManager);
+                    return this.fileManager.isReady();
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public boolean isGenerating()
@@ -118,21 +154,31 @@ public class ChunkLoaderManager
             }
             else
             {
-                loader.fileManager.closeAndRemoveAllFiles();
+                fileManager.closeAndRemoveAllFiles();
                 isGenerating = false;
             }
         }
     }
 
-    public boolean hasValidPregeneratorFiles()
+    public void reset(boolean hardReset)
     {
-        return false;
+        this.isGenerating = false;
+        this.chunksToLoad.clear();
+        this.chunkToLoadIndex = -1;
+        this.serverType = null;
+        this.loader = null;
+        this.dimensionID = Integer.MIN_VALUE;
+        if (hardReset)
+        {
+            fileManager.closeAndRemoveAllFiles();
+        }
+        else
+        {
+            fileManager.closeAllFiles();
+        }
+        this.fileManager = null;
     }
 
-    public boolean intializeFromPregeneratorFiles()
-    {
-        return false;
-    }
     private void addChunk(int chunkX, int chunkZ)
     {
         chunksToLoad.add(Pair.of(chunkX, chunkZ));
