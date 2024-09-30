@@ -68,6 +68,8 @@ public class ChunkLoaderManager
     {
         return this.isGenerating;
     }
+
+    // TODO: DOUBLE CHECK THIS - It seems from save viewing the raster is okay on the edges, but the filling is incorrect. Investigate this.
     // Passed in xCenter and passed in zCenter are both in block coordinates. Be sure to transform to chunk coordinates
     // I've done a ton of testing with this. It works without duplicates and holes in the raster.
     public void findChunksToLoadCircle(int radius, double xCenter, double zCenter)
@@ -103,19 +105,20 @@ public class ChunkLoaderManager
 
             }
 
+            // TODO: THE ERROR IS OBVIOUSLY HERE YOU NEED TO OFFSET THE CHUNKS
             if(x != previousX)
             {
-                addChunksBetween( x, -z, z);
-                addChunksBetween(-x, -z, z);
+                addChunksBetween(chunkXCenter + x, chunkZCenter - z, chunkZCenter + z);
+                addChunksBetween(chunkXCenter - x, chunkZCenter - z, chunkZCenter + z);
             }
             previousX = x;
 
             if (x != z)
             {
-                addChunksBetween( z, -x, x);
+                addChunksBetween( chunkXCenter + z, chunkZCenter - x, chunkZCenter + x);
                 if (z != 0)
                 {
-                    addChunksBetween(-z, -x, x);
+                    addChunksBetween(chunkXCenter - z, chunkZCenter - x, chunkZCenter + x);
                 }
             }
 
