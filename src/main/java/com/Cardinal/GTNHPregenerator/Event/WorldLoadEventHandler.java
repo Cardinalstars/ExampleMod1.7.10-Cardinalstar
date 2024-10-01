@@ -13,7 +13,7 @@ public class WorldLoadEventHandler
         {
             int dimensionId = event.world.provider.dimensionId;
             MinecraftServer server = MinecraftServer.getServer();
-            if (!ChunkLoaderManager.instance.isGenerating() && !ChunkLoaderManager.instance.intializeFromPregeneratorFiles(server, dimensionId))
+            if (!ChunkLoaderManager.instance.isGenerating() && !ChunkLoaderManager.instance.initializeFromPregeneratorFiles(server, dimensionId))
             {
                 ChunkLoaderManager.instance.reset(false);
                 System.out.println("No pregenerator to load for dimension Id: " + dimensionId);

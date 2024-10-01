@@ -11,11 +11,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GeneratorCommand extends CommandBase {
+public class GeneratorStartCommand extends CommandBase {
 
     private final List<String> aliases;
 
-    public GeneratorCommand() {
+    public GeneratorStartCommand() {
         aliases = new ArrayList<>();
         aliases.add("pregenerate");
     }

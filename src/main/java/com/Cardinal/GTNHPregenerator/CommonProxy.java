@@ -1,6 +1,8 @@
 package com.Cardinal.GTNHPregenerator;
 
-import com.Cardinal.GTNHPregenerator.Commands.GeneratorCommand;
+import com.Cardinal.GTNHPregenerator.Commands.GeneratorProgressCommand;
+import com.Cardinal.GTNHPregenerator.Commands.GeneratorStartCommand;
+import com.Cardinal.GTNHPregenerator.Commands.GeneratorStopCommand;
 import com.Cardinal.GTNHPregenerator.Event.ServerTickEventHandler;
 import com.Cardinal.GTNHPregenerator.Event.WorldLoadEventHandler;
 import com.Cardinal.GTNHPregenerator.Event.WorldUnloadEventHandler;
@@ -18,8 +20,8 @@ public class CommonProxy {
     public void preInit(FMLPreInitializationEvent event) {
         Config.synchronizeConfiguration(event.getSuggestedConfigurationFile());
 
-        MyMod.LOG.info(Config.greeting);
-        MyMod.LOG.info("I am MyMod at version " + Tags.VERSION);
+        GTNHPregenerator.LOG.info(Config.greeting);
+        GTNHPregenerator.LOG.info("I am MyMod at version " + Tags.VERSION);
     }
 
     // load "Do your mod setup. Build whatever data structures you care about. Register recipes." (Remove if not needed)
@@ -37,6 +39,8 @@ public class CommonProxy {
     // register server commands in this event handler (Remove if not needed)
     public void serverStarting(FMLServerStartingEvent event)
     {
-        event.registerServerCommand(new GeneratorCommand());
+        event.registerServerCommand(new GeneratorStartCommand());
+        event.registerServerCommand(new GeneratorProgressCommand());
+        event.registerServerCommand(new GeneratorStopCommand());
     }
 }

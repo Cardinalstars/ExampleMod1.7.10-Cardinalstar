@@ -5,6 +5,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.gen.ChunkProviderServer;
 import org.apache.commons.lang3.tuple.Pair;
 
+import static com.Cardinal.GTNHPregenerator.GTNHPregenerator.LOG;
+
 
 public class ChunkLoader
 {
@@ -22,7 +24,7 @@ public class ChunkLoader
         cps.loadChunk(x, z, () -> {
             ChunkLoaderManager.instance.removeChunkFromList();
             this.fileManager.saveIteration(ChunkLoaderManager.instance.getChunkToLoadSize());
-            System.out.println("Chunk at " + x + ", " + z + " loaded.");
+            LOG.info("Chunk at " + x + ", " + z + " loaded.");
         });
     }
 }

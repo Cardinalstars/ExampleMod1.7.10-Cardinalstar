@@ -16,12 +16,14 @@ public class ChunkLoaderManager
     private int dimensionID;
     private MinecraftServer serverType;
     private Vector<Pair<Integer, Integer>> chunksToLoad = new Vector<>(1000);
+    private int totalChunksToLoad;
     private int chunkToLoadIndex;
     private ChunkLoader loader;
     private PregeneratorFileManager fileManager;
 
     public void initializePregenerator(PregeneratorCommandInfo commandInfo, MinecraftServer server) throws IOException {
         findChunksToLoadCircle(commandInfo.getRadius(), commandInfo.getXLoc(), commandInfo.getZLoc());
+        this.totalChunksToLoad = chunksToLoad.size();
         this.chunkToLoadIndex = chunksToLoad.size() - 1;
         this.dimensionID = commandInfo.getDimensionID();
         this.isGenerating = true;
@@ -30,9 +32,7 @@ public class ChunkLoaderManager
         this.loader = new ChunkLoader(this.fileManager);
     }
 
-    // The file manager is already intialized at this point. Maybe want to make this part of the intializeFromPregeneratorFiles method.
-    // Not sure yet.
-    public boolean intializeFromPregeneratorFiles(MinecraftServer server, int dimensionToCheck)
+    public boolean initializeFromPregeneratorFiles(MinecraftServer server, int dimensionToCheck)
     {
         try
         {
@@ -46,6 +46,7 @@ public class ChunkLoaderManager
                     return false;
                 }
                 findChunksToLoadCircle(commandInfo.getRadius(), commandInfo.getXLoc(), commandInfo.getZLoc());
+                this.totalChunksToLoad = chunksToLoad.size();
                 this.chunkToLoadIndex = commandInfo.getIteration() - 1;
                 this.dimensionID = commandInfo.getDimensionID();
                 if (this.chunkToLoadIndex < chunksToLoad.size()) {
@@ -69,7 +70,6 @@ public class ChunkLoaderManager
         return this.isGenerating;
     }
 
-    // TODO: DOUBLE CHECK THIS - It seems from save viewing the raster is okay on the edges, but the filling is incorrect. Investigate this.
     // Passed in xCenter and passed in zCenter are both in block coordinates. Be sure to transform to chunk coordinates
     // I've done a ton of testing with this. It works without duplicates and holes in the raster.
     public void findChunksToLoadCircle(int radius, double xCenter, double zCenter)
@@ -105,7 +105,6 @@ public class ChunkLoaderManager
 
             }
 
-            // TODO: THE ERROR IS OBVIOUSLY HERE YOU NEED TO OFFSET THE CHUNKS
             if(x != previousX)
             {
                 addChunksBetween(chunkXCenter + x, chunkZCenter - z, chunkZCenter + z);
@@ -138,12 +137,17 @@ public class ChunkLoaderManager
 
     public void removeChunkFromList()
     {
-        chunksToLoad.remove(chunksToLoad.size() - 1);
+        this.chunksToLoad.remove(this.chunksToLoad.size() - 1);
     }
 
     public int getChunkToLoadSize()
     {
-        return chunksToLoad.size();
+        return this.chunksToLoad.size();
+    }
+
+    public int getTotalChunksToLoad()
+    {
+        return this.totalChunksToLoad;
     }
 
     public int getDimensionID()
