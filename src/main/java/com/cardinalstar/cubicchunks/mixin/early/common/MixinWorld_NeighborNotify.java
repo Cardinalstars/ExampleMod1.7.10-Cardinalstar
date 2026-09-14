@@ -20,44 +20,51 @@
  */
 package com.cardinalstar.cubicchunks.mixin.early.common;
 
-import java.util.ArrayDeque;
-
 import net.minecraft.block.Block;
 import net.minecraft.world.World;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 
+import com.gtnewhorizon.gtnhlib.util.CoordinatePacker;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+
+import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 
 /**
  * Flattens the synchronous neighbour-notify cascade that overflows the stack
  * during cubic world generation (issue #61).
  *
- * <p>Vanilla propagates support-dependency chains (snow, reeds, leaves, cacti,
+ * <p>
+ * Vanilla propagates support-dependency chains (snow, reeds, leaves, cacti,
  * falling blocks, ...) through {@code setBlockToAir -> markAndNotifyBlock ->
  * notifyBlockOfNeighborChange -> onNeighborBlockChange -> ...} as a synchronous
  * recursion. Vanilla keeps that chain shallow via the hard height bounds; a
  * cubic world removes those bounds, so a large patch of support-dependent
  * blocks losing support at once can recurse until the stack overflows.
  *
- * <p>This mixin wraps the actual {@code onNeighborBlockChange} call: while the
+ * <p>
+ * This mixin wraps the actual {@code onNeighborBlockChange} call: while the
  * depth is under the cap it runs normally, and past the cap the coordinate is
  * parked in a thread-local FIFO instead. The outermost frame drains the FIFO
  * iteratively, so notify semantics are preserved (no floating snow, no dropped
  * updates) — only the recursion is flattened.
  *
- * <p>Depth accounting lives in a {@code try/finally} so it can never leak, and
+ * <p>
+ * Depth accounting lives in a {@code try/finally} so it can never leak, and
  * a separate "draining" flag keeps the drain iterative (nested drains only
  * enqueue and let the already-running drain pick the entries up), which is what
  * keeps redstone/mechanical blocks working: they only ever see the normal,
  * synchronous path unless a genuinely pathological cascade is in progress.
  *
- * <p>Known limitation: for very tall vertical chains (e.g. a reed stack taller
+ * <p>
+ * Known limitation: for very tall vertical chains (e.g. a reed stack taller
  * than the depth cap), the cascade is flattened in batches and the remainder
  * falls back to vanilla random ticks over a few seconds. This does not affect
  * vanilla-sized features (reeds are capped at 3 blocks) and only trades a stack
@@ -72,35 +79,42 @@ public class MixinWorld_NeighborNotify {
     private static final int CC_MAX_NOTIFY_DEPTH = 64;
 
     @Unique
-    private static final ThreadLocal<int[]> cc$notifyDepth = ThreadLocal.withInitial(() -> new int[1]);
+    private static final ThreadLocal<MutableInt> cc$notifyDepth = ThreadLocal.withInitial(MutableInt::new);
 
     @Unique
-    private static final ThreadLocal<ArrayDeque<int[]>> cc$pendingNotifies = ThreadLocal.withInitial(ArrayDeque::new);
+    private static final ThreadLocal<LongArrayFIFOQueue> cc$pendingNotifies = ThreadLocal
+        .withInitial(LongArrayFIFOQueue::new);
 
     @Unique
-    private static final ThreadLocal<boolean[]> cc$draining = ThreadLocal.withInitial(() -> new boolean[1]);
+    private static final ThreadLocal<MutableBoolean> cc$draining = ThreadLocal.withInitial(MutableBoolean::new);
 
     @WrapOperation(
         method = "notifyBlockOfNeighborChange",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;onNeighborBlockChange(Lnet/minecraft/world/World;IIILnet/minecraft/block/Block;)V"))
-    private void cc$guardNeighborNotify(
-        Block block, World world, int x, int y, int z, Block neighbor, Operation<Void> original) {
-        int[] depth = cc$notifyDepth.get();
-        depth[0]++;
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/block/Block;onNeighborBlockChange(Lnet/minecraft/world/World;IIILnet/minecraft/block/Block;)V"))
+    private void cc$guardNeighborNotify(Block block, World world, int x, int y, int z, Block neighbor,
+        Operation<Void> original) {
+        MutableInt depth = cc$notifyDepth.get();
+        depth.increment();
         try {
-            if (depth[0] <= CC_MAX_NOTIFY_DEPTH) {
+            if (depth.intValue() <= CC_MAX_NOTIFY_DEPTH) {
                 original.call(block, world, x, y, z, neighbor);
             } else {
-                cc$pendingNotifies.get().addLast(new int[] { x, y, z });
+                cc$pendingNotifies.get()
+                    .enqueue(CoordinatePacker.pack(x, y, z));
             }
         } finally {
-            depth[0]--;
-            if (depth[0] == 0 && !cc$draining.get()[0]) {
-                cc$draining.get()[0] = true;
+            depth.decrement();
+            if (depth.intValue() == 0 && !cc$draining.get()
+                .booleanValue()) {
+                cc$draining.get()
+                    .setTrue();
                 try {
                     cc$drain((World) (Object) this, neighbor);
                 } finally {
-                    cc$draining.get()[0] = false;
+                    cc$draining.get()
+                        .setFalse();
                 }
             }
         }
@@ -108,12 +122,12 @@ public class MixinWorld_NeighborNotify {
 
     @Unique
     private void cc$drain(World world, Block neighbor) {
-        ArrayDeque<int[]> pending = cc$pendingNotifies.get();
+        LongArrayFIFOQueue pending = cc$pendingNotifies.get();
         while (!pending.isEmpty()) {
-            int[] pos = pending.pollFirst();
-            int px = pos[0];
-            int py = pos[1];
-            int pz = pos[2];
+            long packed = pending.dequeueLong();
+            int px = CoordinatePacker.unpackX(packed);
+            int py = CoordinatePacker.unpackY(packed);
+            int pz = CoordinatePacker.unpackZ(packed);
             Block block = world.getBlock(px, py, pz);
             if (block == null) {
                 continue;
